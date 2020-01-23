@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.http import HttpResponse
 from ehall.login import login, jw_login
-from django.http import JsonResponse
 import json
 
 username = "175043115"
@@ -27,9 +26,7 @@ def course(request):
 
 
 def grade(request):
-    url = "https://jw.cidp.edu.cn/Teacher/MarkManagement/StudentAverageMarkSearchFZ.aspx"
-    res = jw_login(url=url,  username=username,  password=password)
-    # res = {
-    #     "dataFlow": r["imptInfo"]
-    # }
-    return HttpResponse(res, content_type="text/html,charset=utf-8")
+    res = jw_login(username=username, password=password)
+    xueqi = json.dumps(res[0])
+    chengji = json.dumps(res[1])
+    return HttpResponse(xueqi, chengji, content_type="application/json,charset=utf-8")
