@@ -37,7 +37,6 @@ def course(request):
 @display_time
 def grade(request):
     res = jw_login(username=username, password=password)
-    res.encode('utf-8')
-    xueqi = json.dumps(res[0], ensure_ascii=False)
-    chengji = json.dumps(res[1], ensure_ascii=False)
-    return JsonResponse([json.dumps(xueqi),json.dumps(chengji)], safe=False)
+    xueqi = json.dumps(res[0], ensure_ascii=False).encode('utf-8')
+    chengji = json.dumps(res[1], ensure_ascii=False).encode('utf-8')
+    return JsonResponse([json.dumps(xueqi), json.dumps(chengji)], safe=False)
