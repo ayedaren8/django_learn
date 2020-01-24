@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import time
 import logging
 import requests
 from requests.cookies import RequestsCookieJar
@@ -7,9 +8,20 @@ from selenium import webdriver
 from selenium.common.exceptions import (NoSuchCookieException,
                                         NoSuchElementException,
                                         TimeoutException)
+from selenium.webdriver.chrome.options import Options
 
 
-def log(LEVEL="loggin.INFO", *, filename="log.txt"):
+def display_time(fun):
+    def deco(*args, **kwargs):
+        begin = time.time()
+        re = fun(*args, **kwargs)
+        end = time.time()
+        print(fun.__name__, "函数耗时", (end-begin), "秒")
+        return re
+    return deco
+
+
+def log(LEVEL="loggin.INFO", *, filename="log.txt", filemode="w"):
     format = logging.Formatter(
         "%(asctime)s - %(filename)s[line:%(lineno)d] \
             - %(levelname)s: %(message)s")
@@ -17,7 +29,7 @@ def log(LEVEL="loggin.INFO", *, filename="log.txt"):
     logger.setLevel(LEVEL)
     # 文件handler
     fh = logging.FileHandler(filename="./logs/"+filename,
-                             mode="w", encoding="utf-8")
+                             mode=filemode, encoding="utf-8")
     fh.setFormatter(format)
     fh.setLevel(logging.INFO)
     # 控制台handler
@@ -28,23 +40,42 @@ def log(LEVEL="loggin.INFO", *, filename="log.txt"):
     logger.addHandler(ch)
 
 
+@display_time
 def getDriver():
     browser_path = r"./chrome/chromedriver.exe"
     try:
-        log(logging.INFO, filename="Log.txt")
-        driver = webdriver.Chrome(executable_path=browser_path)
+        log(logging.INFO, filename="driverLog.txt")
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        driver = webdriver.Chrome(
+            executable_path=browser_path, chrome_options=chrome_options)
         return driver
     except Exception:
         raise IOError("加载web驱动出错了")
+        logging.info("加载web驱动出错了")
 
 
+# 实验证明Phantoms内核跑的比chrome快
+@display_time
+def getDriver_Phantoms():
+    browser_path = r"Phantoms/bin/phantomjs.exe"
+    try:
+        log(logging.INFO, filename="driverLog.txt")
+        driver = webdriver.PhantomJS(executable_path=browser_path)
+        return driver
+    except Exception:
+        raise IOError("加载web驱动出错了")
+        logging.info("加载web驱动出错了")
+
+
+@display_time
 def getCookies(username, password):
     log(logging.INFO, filename="getCookiesLog.txt")
     url = "http://authserver.cidp.edu.cn/authserver/login?\
         service=http%3A%2F%2Fehall.cidp.edu.cn%2Flogin%3F\
         service%3Dhttp%3A%2F%2Fehall.cidp.edu.cn%2Fnew%2Findex.html"
     try:
-        driver = webdriver.Chrome(executable_path=r"./chrome/chromedriver.exe")
+        driver = getDriver_Phantoms()
         driver.get(url=url)
         driver.find_element_by_name('username').send_keys(username)
         driver.find_element_by_id('password').send_keys(password)
@@ -66,13 +97,14 @@ def getCookies(username, password):
     return False
 
 
+@display_time
 def login(url, username, password):
     try:
         jar = getCookies(username, password)
         res = requests.get(url=url, cookies=jar)
-        print("内部", res.text)
         res.text.encode("utf-8")
-        res = res.text.strip('[]')
+        res = res.text
+        res = res.strip('[]')
         res = json.loads(res)
         print(type(res))
         return res
@@ -80,10 +112,11 @@ def login(url, username, password):
         print("查询失败，请检查用户名和密码及网络！")
 
 
+@display_time
 def jw_login(username, password):
     log(logging.INFO, filename="gradeLog.txt", filemode="a")
     url = "http://authserver.cidp.edu.cn/authserver/login?service=http%3a%2f%2fjw.cidp.edu.cn%2fLoginHandler.ashx"
-    driver = webdriver.Chrome(executable_path=r"./chrome/chromedriver.exe")
+    driver = getDriver_Phantoms()
     driver.get(url=url)
     driver.find_element_by_name('username').send_keys(username)
     driver.find_element_by_id('password').send_keys(password)
