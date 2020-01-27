@@ -127,7 +127,20 @@ def jw_login(username, password):
     xueqi = driver.find_element_by_xpath("//input[@id='hfSemesterFramework']")
     chengji = driver.find_element_by_xpath(
         "//input[@id='hfAverageMarkFromClass']")
+    # xueqi = xueqi.get_attribute("value").strip('[]')
+    # chengji = chengji.get_attribute("value").strip('[]')
     xueqi = xueqi.get_attribute("value")
     chengji = chengji.get_attribute("value")
     driver.quit()
-    return xueqi, chengji
+    return json.loads(xueqi), json.loads(chengji)
+
+@display_time
+def clear_Data(xueqi, chengji):
+    for year in xueqi:
+        for i in year["List"]:
+            gradeList = []
+            for n in chengji:
+                if int(i["SemesterId"]) == int(n["SemesterID"]):
+                    gradeList.append(n)
+            i.update({"gradeList": gradeList})
+    return xueqi
