@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.http import HttpResponse
 from django.http import JsonResponse
-from ehall.login import login, jw_login
+from ehall.login import login, jw_login, clear_Data
 import json
 import time
 
@@ -36,7 +36,6 @@ def course(request):
 
 @display_time
 def grade(request):
-    res = jw_login(username=username, password=password)
-    xueqi = json.dumps(res[0], ensure_ascii=False).encode('utf-8')
-    chengji = json.dumps(res[1], ensure_ascii=False).encode('utf-8')
-    return JsonResponse([json.dumps(xueqi), json.dumps(chengji)], safe=False)
+    xueqi, chengji = jw_login(username=username, password=password)
+    res = clear_Data(xueqi, chengji)
+    return HttpResponse(json.dumps(res, ensure_ascii=False), content_type="application/json,charset=utf-8")
