@@ -8,3 +8,6 @@ envx
 .env
 env
 Trash
+logs/gradeLog.txt
+logs/driverLog.txt
+ghostdriver.log
