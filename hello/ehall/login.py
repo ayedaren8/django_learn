@@ -52,7 +52,6 @@ def getDriver():
         return driver
     except Exception:
         raise IOError("加载web驱动出错了")
-        logging.info("加载web驱动出错了")
 
 
 # 实验证明Phantoms内核跑的比chrome快
@@ -65,7 +64,6 @@ def getDriver_Phantoms():
         return driver
     except Exception:
         raise IOError("加载web驱动出错了")
-        logging.info("加载web驱动出错了")
 
 
 @display_time
@@ -84,55 +82,58 @@ def getCookies(username, password):
         jar = RequestsCookieJar()
         for cookie in cookies:
             jar.set(cookie['name'], cookie['value'])
-            # print(cookie)
-        driver.quit()
         return jar
-    except TimeoutException:
-        logging.info("请求超时，可能是教务处挂了")
-    except NoSuchCookieException:
-        logging.info("没有获取到Cookies")
-    except NoSuchElementException:
-        logging.info("没有找到元素")
-    driver.quit()
-    return False
+    except Exception:
+        print("登录出现异常")
+        return 501
+    finally:
+        driver.quit()
 
 
 @display_time
 def login(url, username, password):
-    try:
         jar = getCookies(username, password)
-        res = requests.get(url=url, cookies=jar)
-        res.text.encode("utf-8")
-        res = res.text
-        res = res.strip('[]')
-        res = json.loads(res)
-        print(type(res))
-        return res
-    except Exception:
-        print("查询失败，请检查用户名和密码及网络！")
+        if jar != 501:
+            res = requests.get(url=url, cookies=jar)
+            res = res.text
+            print(res)
+            res = json.loads(res)
+            return res
+        else:
+            return 503
+  
 
 
 @display_time
 def jw_login(username, password):
     log(logging.INFO, filename="gradeLog.txt", filemode="a")
     url = "http://authserver.cidp.edu.cn/authserver/login?service=http%3a%2f%2fjw.cidp.edu.cn%2fLoginHandler.ashx"
-    driver = getDriver_Phantoms()
-    driver.get(url=url)
-    driver.find_element_by_name('username').send_keys(username)
-    driver.find_element_by_id('password').send_keys(password)
-    driver.find_element_by_tag_name('button').click()
-    driver.get(url="https://jw.cidp.edu.cn/Navigation/Default.htm")
-    driver.get(
-        url="https://jw.cidp.edu.cn/Teacher/MarkManagement/StudentAverageMarkSearchFZ.aspx")
-    xueqi = driver.find_element_by_xpath("//input[@id='hfSemesterFramework']")
-    chengji = driver.find_element_by_xpath(
-        "//input[@id='hfAverageMarkFromClass']")
-    # xueqi = xueqi.get_attribute("value").strip('[]')
-    # chengji = chengji.get_attribute("value").strip('[]')
-    xueqi = xueqi.get_attribute("value")
-    chengji = chengji.get_attribute("value")
-    driver.quit()
-    return json.loads(xueqi), json.loads(chengji)
+    try:
+        driver = getDriver_Phantoms()
+        driver.get(url=url)
+        driver.find_element_by_name('username').send_keys(username)
+        driver.find_element_by_id('password').send_keys(password)
+        driver.find_element_by_tag_name('button').click()
+        driver.get(url="https://jw.cidp.edu.cn/Navigation/Default.htm")
+        if driver.title == "本科生教务管理系统":
+            driver.quit()
+            return 503
+        driver.get(
+            url="https://jw.cidp.edu.cn/Teacher/MarkManagement/StudentAverageMarkSearchFZ.aspx")
+        xueqi = driver.find_element_by_xpath(
+            "//input[@id='hfSemesterFramework']")
+        chengji = driver.find_element_by_xpath(
+            "//input[@id='hfAverageMarkFromClass']")
+        xueqi = xueqi.get_attribute("value")
+        chengji = chengji.get_attribute("value")
+        return json.loads(xueqi), json.loads(chengji)
+    except NoSuchElementException:
+        return 503
+    except Exception:
+        return 500
+    finally:
+        driver.quit()
+
 
 @display_time
 def clear_Data(xueqi, chengji):
