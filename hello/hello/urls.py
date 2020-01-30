@@ -18,7 +18,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('netCost/', views.netCost),
-    path('course/', views.course),
-    path('grade/', views.grade),
+    path('api/', views.api),
 ]
+
