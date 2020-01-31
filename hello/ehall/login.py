@@ -82,7 +82,7 @@ def getCookies(username, password):
             jar.set(cookie['name'], cookie['value'])
         return jar
     except Exception:
-        return 501
+        return 889
     finally:
         driver.quit()
 
@@ -98,7 +98,7 @@ def login(url, username, password):
             res = json.loads(res)
             return res
         except json.JSONDecodeError:
-            return 503
+            return 888
     else:
         return jar
 
@@ -116,11 +116,11 @@ def jw_driver(username, password):
         driver.get(url="https://jw.cidp.edu.cn/Navigation/Default.htm")
         if driver.title == "本科生教务管理系统":
             driver.quit()
-            return 503
+            return 888
         else:
             return driver
     except NoSuchElementException:
-        return 503
+        return 889
     except Exception:
         return 500
 
@@ -147,50 +147,43 @@ def jw_login(username, password):
 
 @display_time
 def jw_get(username, password):
-    try:
-        driver = jw_driver(username, password)
-        print(driver)
-        if driver is not int:
-            cookies = driver.get_cookies()
-            print(cookies)
-            driver.quit()
-            jar = RequestsCookieJar()
-            for cookie in cookies:
-                jar.set(cookie['name'], cookie['value'])
-            print(jar)
-            se = requests.session()
-            se.cookies.update(jar)
-            data = {'action': 'getInfo'}
-            res = se.post(
-                url="https://jw.cidp.edu.cn/RegisterInfo/RegisterManageHandler.ashx", data=data)
-            print(res.text)
-            return json.loads(res.text)
-        else:
-            return driver
-    finally:
-       pass
+    driver = jw_driver(username, password)
+    if driver is not int:
+        cookies = driver.get_cookies()
+        print(cookies)
+        driver.quit()
+        jar = RequestsCookieJar()
+        for cookie in cookies:
+            jar.set(cookie['name'], cookie['value'])
+        print(jar)
+        se = requests.session()
+        se.cookies.update(jar)
+        data = {'action': 'getInfo'}
+        res = se.post(
+            url="https://jw.cidp.edu.cn/RegisterInfo/RegisterManageHandler.ashx", data=data)
+        print(res.text)
+        return json.loads(res.text)
+    else:
+        return driver
 
 
 def jw_get_photo(username, password):
-    try:
-        driver = jw_driver(username, password)
-        print(driver)
-        if type(driver) is not int:
-            cookies = driver.get_cookies()
-            print(cookies)
-            driver.quit()
-            jar = RequestsCookieJar()
-            for cookie in cookies:
-                jar.set(cookie['name'], cookie['value'])
-            print(jar)
-            se = requests.session()
-            se.cookies.update(jar)
-            res = se.get(url="https://jw.cidp.edu.cn/RegisterInfo/RegisterManageHandler.ashx?action=getPhoto")
-            return res
-        else:
-            return driver
-    finally:
-        pass
+    driver = jw_driver(username, password)
+    if type(driver) is not int:
+        cookies = driver.get_cookies()
+        print(cookies)
+        driver.quit()
+        jar = RequestsCookieJar()
+        for cookie in cookies:
+            jar.set(cookie['name'], cookie['value'])
+        print(jar)
+        se = requests.session()
+        se.cookies.update(jar)
+        res = se.get(
+            url="https://jw.cidp.edu.cn/RegisterInfo/RegisterManageHandler.ashx?action=getPhoto")
+        return res
+    else:
+        return driver
 
 
 @display_time
