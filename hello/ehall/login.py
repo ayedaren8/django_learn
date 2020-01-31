@@ -5,10 +5,8 @@ import logging
 import requests
 from requests.cookies import RequestsCookieJar
 from selenium import webdriver
-from selenium.common.exceptions import (NoSuchCookieException,
-                                        NoSuchElementException,
-                                        TimeoutException)
 from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import NoSuchElementException
 
 
 def display_time(fun):
@@ -84,7 +82,6 @@ def getCookies(username, password):
             jar.set(cookie['name'], cookie['value'])
         return jar
     except Exception:
-        print("登录出现异常")
         return 501
     finally:
         driver.quit()
@@ -92,20 +89,22 @@ def getCookies(username, password):
 
 @display_time
 def login(url, username, password):
-        jar = getCookies(username, password)
-        if jar != 501:
-            res = requests.get(url=url, cookies=jar)
-            res = res.text
-            print(res)
+    jar = getCookies(username, password)
+    if jar is not int:
+        res = requests.get(url=url, cookies=jar)
+        res = res.text
+        print(res)
+        try:
             res = json.loads(res)
             return res
-        else:
+        except json.JSONDecodeError:
             return 503
-  
+    else:
+        return jar
 
 
 @display_time
-def jw_login(username, password):
+def jw_driver(username, password):
     log(logging.INFO, filename="gradeLog.txt", filemode="a")
     url = "http://authserver.cidp.edu.cn/authserver/login?service=http%3a%2f%2fjw.cidp.edu.cn%2fLoginHandler.ashx"
     try:
@@ -118,21 +117,80 @@ def jw_login(username, password):
         if driver.title == "本科生教务管理系统":
             driver.quit()
             return 503
-        driver.get(
-            url="https://jw.cidp.edu.cn/Teacher/MarkManagement/StudentAverageMarkSearchFZ.aspx")
-        xueqi = driver.find_element_by_xpath(
-            "//input[@id='hfSemesterFramework']")
-        chengji = driver.find_element_by_xpath(
-            "//input[@id='hfAverageMarkFromClass']")
-        xueqi = xueqi.get_attribute("value")
-        chengji = chengji.get_attribute("value")
-        return json.loads(xueqi), json.loads(chengji)
+        else:
+            return driver
     except NoSuchElementException:
         return 503
     except Exception:
         return 500
+
+
+@display_time
+def jw_login(username, password):
+    try:
+        driver = jw_driver(username, password)
+        if driver is not int:
+            driver.get(
+                url="https://jw.cidp.edu.cn/Teacher/MarkManagement/StudentAverageMarkSearchFZ.aspx")
+            xueqi = driver.find_element_by_xpath(
+                "//input[@id='hfSemesterFramework']")
+            chengji = driver.find_element_by_xpath(
+                "//input[@id='hfAverageMarkFromClass']")
+            xueqi = xueqi.get_attribute("value")
+            chengji = chengji.get_attribute("value")
+            return json.loads(xueqi), json.loads(chengji)
+        else:
+            return driver
     finally:
         driver.quit()
+
+
+@display_time
+def jw_get(username, password):
+    try:
+        driver = jw_driver(username, password)
+        print(driver)
+        if driver is not int:
+            cookies = driver.get_cookies()
+            print(cookies)
+            driver.quit()
+            jar = RequestsCookieJar()
+            for cookie in cookies:
+                jar.set(cookie['name'], cookie['value'])
+            print(jar)
+            se = requests.session()
+            se.cookies.update(jar)
+            data = {'action': 'getInfo'}
+            res = se.post(
+                url="https://jw.cidp.edu.cn/RegisterInfo/RegisterManageHandler.ashx", data=data)
+            print(res.text)
+            return json.loads(res.text)
+        else:
+            return driver
+    finally:
+       pass
+
+
+def jw_get_photo(username, password):
+    try:
+        driver = jw_driver(username, password)
+        print(driver)
+        if type(driver) is not int:
+            cookies = driver.get_cookies()
+            print(cookies)
+            driver.quit()
+            jar = RequestsCookieJar()
+            for cookie in cookies:
+                jar.set(cookie['name'], cookie['value'])
+            print(jar)
+            se = requests.session()
+            se.cookies.update(jar)
+            res = se.get(url="https://jw.cidp.edu.cn/RegisterInfo/RegisterManageHandler.ashx?action=getPhoto")
+            return res
+        else:
+            return driver
+    finally:
+        pass
 
 
 @display_time
