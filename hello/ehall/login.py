@@ -37,6 +37,19 @@ def log(LEVEL="loggin.INFO", *, filename="log.txt", filemode="w"):
     logger.addHandler(fh)
     logger.addHandler(ch)
 
+# 判断是否需要验证码
+
+
+def needCaptcha(username):
+    ts = int(round(time.time() * 1000))
+    url = "http://authserver.cidp.edu.cn/authserver/needCaptcha.html?username={username}&pwdEncrypt2=pwdEncryptSalt&_={ts}".format(
+        username=username, ts=ts)
+    res = requests.post(url)
+    if res.text == "false":
+        return True
+    else:
+        return False
+
 
 @display_time
 def getDriver():
@@ -66,6 +79,8 @@ def getDriver_Phantoms():
 
 @display_time
 def getCookies(username, password):
+    if needCaptcha(username) is False:
+        return 589
     log(logging.INFO, filename="getCookiesLog.txt")
     url = "http://authserver.cidp.edu.cn/authserver/login?\
         service=http%3A%2F%2Fehall.cidp.edu.cn%2Flogin%3F\
@@ -82,7 +97,7 @@ def getCookies(username, password):
             jar.set(cookie['name'], cookie['value'])
         return jar
     except Exception:
-        return 889
+        return 589
     finally:
         driver.quit()
 
@@ -98,13 +113,15 @@ def login(url, username, password):
             res = json.loads(res)
             return res
         except json.JSONDecodeError:
-            return 888
+            return 588
     else:
         return jar
 
 
 @display_time
 def jw_driver(username, password):
+    if needCaptcha(username) is False:
+        return 589
     log(logging.INFO, filename="gradeLog.txt", filemode="a")
     url = "http://authserver.cidp.edu.cn/authserver/login?service=http%3a%2f%2fjw.cidp.edu.cn%2fLoginHandler.ashx"
     try:
@@ -116,39 +133,37 @@ def jw_driver(username, password):
         driver.get(url="https://jw.cidp.edu.cn/Navigation/Default.htm")
         if driver.title == "本科生教务管理系统":
             driver.quit()
-            return 888
+            return 588
         else:
             return driver
     except NoSuchElementException:
-        return 889
+        return 589
     except Exception:
         return 500
 
 
 @display_time
 def jw_login(username, password):
-    try:
-        driver = jw_driver(username, password)
-        if driver is not int:
-            driver.get(
-                url="https://jw.cidp.edu.cn/Teacher/MarkManagement/StudentAverageMarkSearchFZ.aspx")
-            xueqi = driver.find_element_by_xpath(
-                "//input[@id='hfSemesterFramework']")
-            chengji = driver.find_element_by_xpath(
-                "//input[@id='hfAverageMarkFromClass']")
-            xueqi = xueqi.get_attribute("value")
-            chengji = chengji.get_attribute("value")
-            return json.loads(xueqi), json.loads(chengji)
-        else:
-            return driver
-    finally:
+    driver = jw_driver(username, password)
+    if type(driver) is not int:
+        driver.get(
+            url="https://jw.cidp.edu.cn/Teacher/MarkManagement/StudentAverageMarkSearchFZ.aspx")
+        xueqi = driver.find_element_by_xpath(
+            "//input[@id='hfSemesterFramework']")
+        chengji = driver.find_element_by_xpath(
+            "//input[@id='hfAverageMarkFromClass']")
+        xueqi = xueqi.get_attribute("value")
+        chengji = chengji.get_attribute("value")
         driver.quit()
+        return json.loads(xueqi), json.loads(chengji)
+    else:
+        return driver
 
 
 @display_time
 def jw_get(username, password):
     driver = jw_driver(username, password)
-    if driver is not int:
+    if type(driver) is not int:
         cookies = driver.get_cookies()
         print(cookies)
         driver.quit()
