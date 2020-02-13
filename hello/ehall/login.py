@@ -51,20 +51,6 @@ def needCaptcha(username):
         return False
 
 
-@display_time
-def getDriver():
-    browser_path = r"./chrome/chromedriver.exe"
-    try:
-        log(logging.INFO, filename="driverLog.txt")
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        driver = webdriver.Chrome(
-            executable_path=browser_path, chrome_options=chrome_options)
-        return driver
-    except Exception:
-        raise IOError("加载web驱动出错了")
-
-
 # 实验证明Phantoms内核跑的比chrome快
 @display_time
 def getDriver_Phantoms():
@@ -142,6 +128,30 @@ def jw_driver(username, password):
         return 500
 
 
+# 考表
+@display_time
+def jw_exam(username, password):
+    url = "https://jw.cidp.edu.cn/Student/StudentExamArrangeTableHandler.ashx"
+    driver = jw_driver(username, password)
+    if type(driver) is not int:
+        cookies = driver.get_cookies()
+        print(cookies)
+        driver.quit()
+        jar = RequestsCookieJar()
+        for cookie in cookies:
+            jar.set(cookie['name'], cookie['value'])
+        print(jar)
+        se = requests.session()
+        se.cookies.update(jar)
+        data = {"semid": "62"}
+        res = se.post(
+            url=url, data=data)
+        print(res.text)
+        return json.loads(res.text)
+    else:
+        return driver
+
+
 @display_time
 def jw_login(username, password):
     driver = jw_driver(username, password)
@@ -161,7 +171,7 @@ def jw_login(username, password):
 
 
 @display_time
-def jw_get(username, password):
+def jw_get(username, password, url , data):
     driver = jw_driver(username, password)
     if type(driver) is not int:
         cookies = driver.get_cookies()
@@ -173,9 +183,8 @@ def jw_get(username, password):
         print(jar)
         se = requests.session()
         se.cookies.update(jar)
-        data = {'action': 'getInfo'}
         res = se.post(
-            url="https://jw.cidp.edu.cn/RegisterInfo/RegisterManageHandler.ashx", data=data)
+            url=url, data=data)
         print(res.text)
         return json.loads(res.text)
     else:
